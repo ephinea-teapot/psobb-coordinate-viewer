@@ -83,10 +83,7 @@ local function Text(str)
   end
 end
 
-local function printCoordinates(floor, coordinateSummary, X, Y, Z)
-  local StrFloor = string.format("FloorID : %i", floor)
-
-  Text(StrFloor)
+local function printCoordinates(coordinateSummary, X, Y, Z)
   Text(string.format("%s: (%.0f, %.0f, %.0f)", coordinateSummary, X, Y, Z))
 end
 
@@ -107,15 +104,16 @@ local showCoordinates = function()
 
     local floor = lib_characters.GetPlayerFloor(playerAddr)
     local result = ttf.directionToTeleportZone(floor, X, Z)
+
+    Text(string.format("FloorID : %i", floor))
+    printCoordinates("Pos", X, Y, Z)
     if type(result) == 'table' then
       local dx = result.dx
       local dy = 0
       local dz = result.dy
-      printCoordinates(floor, "To TP", dx, dy, dz)
+      printCoordinates("To TP", dx, dy, dz)
     elseif result == true then
       imgui.TextColored(1, 0, 0, 1, "On Teleporter!")
-    else
-      printCoordinates(floor, "Pos", X, Y, Z)
     end
 
     -- show placeholder if the pointer is null
