@@ -31,3 +31,17 @@ A little PSOBB addon that shows your X, Y, and Z coordinates.
 
 #### v1.0.1
 - Fixed initial window size
+
+--------
+## Fork from the original
+#### 2025/6/1
+Improved display of coordinates to make it easier to find the teleporter after defeating a boss in TTF
+
+Normal display
+
+![Screenshot_20250601_145321](https://github.com/user-attachments/assets/ed19de31-d2f7-4c68-ae11-ffb96ccd4b15)
+
+Display in boss area (Forest, Cave)
+
+![Screenshot_20250601_145334](https://github.com/user-attachments/assets/12255e4f-29b4-495c-843c-5bed607f2096)
+![Screenshot_20250601_145410](https://github.com/user-attachments/assets/88756916-945e-4e7c-a26c-80510e366791)
