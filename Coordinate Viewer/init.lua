@@ -2,6 +2,9 @@
 local core_mainmenu = require("core_mainmenu")
 local cfg = require("Coordinate Viewer.configuration")
 local lib_theme_loaded, lib_theme = pcall(require, "Theme Editor.theme")
+local lib_characters = require("solylib.characters")
+
+local ttf = require("Coordinate Viewer.ttf")
 
 -- options
 local optionsLoaded, options = pcall(require, "Coordinate Viewer.options")
@@ -9,9 +12,9 @@ local optionsFileName = "addons/Coordinate Viewer/options.lua"
 local firstPresent = true
 local ConfigurationWindow
 
-
 if optionsLoaded then
-  options.configurationEnableWindow = options.configurationEnableWindow == nil and true or options.configurationEnableWindow
+  options.configurationEnableWindow = options.configurationEnableWindow == nil and true or
+      options.configurationEnableWindow
   options.enable = options.enable == nil and true or options.enable
   options.EnableWindow = options.EnableWindow == nil and true or options.EnableWindow
   options.useCustomTheme = options.useCustomTheme == nil and false or options.useCustomTheme
@@ -72,6 +75,21 @@ local function SaveOptions(options)
   end
 end
 
+local function Text(str)
+  if options.HighContrast then
+    imgui.TextColored(0, 1, 0, 1, str)
+  else
+    imgui.Text(0, 1, 0, 1, str)
+  end
+end
+
+local function printCoordinates(floor, coordinateSummary, X, Y, Z)
+  local StrFloor = string.format("FloorID : %i", floor)
+
+  Text(StrFloor)
+  Text(string.format("%s: (%.0f, %.0f, %.0f)", coordinateSummary, X, Y, Z))
+end
+
 -- player data
 local _PlayerArray = 0x00A94254
 local _PlayerIndex = 0x00A9C4F4
@@ -80,43 +98,32 @@ local _PlayerIndex = 0x00A9C4F4
 local showCoordinates = function()
   local playerIndex = pso.read_u32(_PlayerIndex)
   local playerAddr = pso.read_u32(_PlayerArray + 4 * playerIndex)
-  
+
   if playerAddr ~= 0 then
     -- raw coords
     local X = pso.read_f32(playerAddr + 0x38) -- left/right
     local Y = pso.read_f32(playerAddr + 0x3C) -- up/down
     local Z = pso.read_f32(playerAddr + 0x40) -- out/in
-    
-    -- formatted coords
-    local StrX = string.format("X : %.3f", X)
-    local StrY = string.format("Y : %.3f", Y)
-    local StrZ = string.format("Z : %.3f", Z)
-    
-    -- display the coords in a high contrast color if enabled
-    if options.HighContrast then
-      imgui.TextColored(0, 1, 0, 1, StrX)
-      imgui.TextColored(0, 1, 0, 1, StrY)
-      imgui.TextColored(0, 1, 0, 1, StrZ)
+
+    local floor = lib_characters.GetPlayerFloor(playerAddr)
+    local result = ttf.directionToTeleportZone(floor, X, Z)
+    if type(result) == 'table' then
+      local dx = result.dx
+      local dy = 0
+      local dz = result.dy
+      printCoordinates(floor, "To TP", dx, dy, dz)
+    elseif result == true then
+      imgui.TextColored(1, 0, 0, 1, "On Teleporter!")
     else
-      imgui.Text(StrX)
-      imgui.Text(StrY)
-      imgui.Text(StrZ)
+      printCoordinates(floor, "Pos", X, Y, Z)
     end
-    
-  -- show placeholder if the pointer is null
+
+    -- show placeholder if the pointer is null
   else
-    local StrX = "X : 0"
-    local StrY = "Y : 0"
-    local StrZ = "Z : 0"
-    
     if options.HighContrast then
-      imgui.TextColored(0, 1, 0, 1, StrX)
-      imgui.TextColored(0, 1, 0, 1, StrY)
-      imgui.TextColored(0, 1, 0, 1, StrZ)
+      imgui.TextColored(0, 1, 0, 1, "Unable to get coordinates")
     else
-      imgui.Text(StrX)
-      imgui.Text(StrY)
-      imgui.Text(StrZ)
+      imgui.Text("Unable to get coordinates")
     end
   end
 end
@@ -137,39 +144,38 @@ local function present()
   if options.enable == false then
     return
   end
-  
+
   if lib_theme_loaded and options.useCustomTheme then
     lib_theme.Push()
   end
-  
+
   if options.Transparent == true then
     imgui.PushStyleColor("WindowBg", 0.0, 0.0, 0.0, 0.0)
   end
 
   if options.EnableWindow then
-
     if firstPresent or options.Changed then
       options.Changed = false
-      
+
       imgui.SetNextWindowPos(options.X, options.Y, "Always")
       imgui.SetNextWindowSize(options.Width, options.Height, "Always");
     end
-    
+
     if imgui.Begin("Coordinate Viewer", nil, { options.NoTitleBar, options.NoResize }) then
       imgui.SetWindowFontScale(options.fontScale)
       showCoordinates();
     end
     imgui.End()
   end
-  
+
   if options.Transparent == true then
     imgui.PopStyleColor()
   end
-  
+
   if lib_theme_loaded and options.useCustomTheme then
     lib_theme.Pop()
   end
-  
+
   if firstPresent then
     firstPresent = false
   end
@@ -184,11 +190,11 @@ local function init()
   end
 
   core_mainmenu.add_button("Coordinate Viewer", mainMenuButtonHandler)
-  
+
   if lib_theme_loaded == false then
     print("Coordinate Viewer : lib_theme couldn't be loaded")
   end
-  
+
   return {
     name = "Coordinate Viewer",
     version = "1.2.0",
